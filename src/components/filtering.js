@@ -1,61 +1,64 @@
 import { createComparison, defaultRules } from "../lib/compare.js";
 
+// Создаём компаратор один раз с правилами по умолчанию
 const compare = createComparison(defaultRules);
 
 export function initFiltering(elements, indexes) {
     // @todo: #4.1 — заполнить выпадающие списки опциями
     Object.keys(indexes).forEach((elementName) => {
-        if (elements[elementName]) {
-            // Добавляем пустой option для сброса
-            const emptyOption = document.createElement("option");
-            emptyOption.value = "";
-            emptyOption.textContent = "";
-            elements[elementName].append(emptyOption);
-
-            // Остальные опции
+        const select = elements[elementName];
+        if (select && select.tagName === 'SELECT') {
+            // Добавляем опции из индекса
             const options = Object.values(indexes[elementName]).map(name => {
                 const option = document.createElement("option");
                 option.value = name;
                 option.textContent = name;
                 return option;
             });
-            elements[elementName].append(...options);
+            select.append(...options);
         }
     });
 
     return (data, state, action) => {
         // @todo: #4.2 — обработать очистку поля (кнопка clear)
         if (action && action.name === 'clear') {
-            const fieldName = action.dataset.field;   // имя поля в state
+            const fieldName = action.dataset.field; // 'date' или 'customer'
             if (fieldName) {
-                // Находим родительский контейнер и поле ввода
-                const parent = action.closest('.filter-wrapper') || action.parentElement;
-                const input = parent?.querySelector('input');
-                if (input) input.value = '';
-                if (state[fieldName] !== undefined) state[fieldName] = '';
+                // Ищем родительский контейнер с классом filter-wrapper и поле ввода внутри
+                const wrapper = action.closest('.filter-wrapper');
+                if (wrapper) {
+                    const input = wrapper.querySelector('input');
+                    if (input) {
+                        input.value = ''; // сброс значения в DOM
+                    }
+                }
+                // Сбрасываем значение в состоянии
+                if (state[fieldName] !== undefined) {
+                    state[fieldName] = '';
+                }
             }
         }
 
         // Обработка кнопки сброса всех фильтров (reset)
         if (action && action.name === 'reset') {
-            // Сбрасываем все поля фильтрации в state и в DOM
-            Object.keys(elements).forEach(elementName => {
-                const el = elements[elementName];
+            // Перебираем все элементы фильтрации
+            Object.keys(elements).forEach((key) => {
+                const el = elements[key];
                 const nameAttr = el.getAttribute('name');
                 if (nameAttr) {
+                    // Сбрасываем соответствующее поле в state
                     if (state[nameAttr] !== undefined) {
                         state[nameAttr] = '';
                     }
                 }
-                // Сбрасываем значение элемента
+                // Сбрасываем значение в DOM
                 if (el.tagName === 'INPUT') {
                     el.value = '';
                 } else if (el.tagName === 'SELECT') {
-                    el.selectedIndex = 0;   // выбираем пустой option
+                    el.selectedIndex = 0; // выбираем первый (пустой) option
                 }
             });
-            // Удаляем total, чтобы не мешал
-            state.total = undefined;
+            // total пересчитывается в collectState, поэтому дополнительных действий не требуется
         }
 
         // @todo: #4.5 — отфильтровать данные используя компаратор

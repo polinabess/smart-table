@@ -28,13 +28,13 @@ function collectState() {
 
     const totalFrom = state.totalFrom ? parseFloat(state.totalFrom) : undefined;
     const totalTo = state.totalTo ? parseFloat(state.totalTo) : undefined;
-    const total = [totalFrom, totalTo].filter(v => v !== undefined && !isNaN(v));
+    const total = [totalFrom, totalTo];
 
     return {                                            // расширьте существующий return вот так
         ...state,
         rowsPerPage,
         page,
-        total: total.length ? total : undefined
+        total
     };
 }
 
