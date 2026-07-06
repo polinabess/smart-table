@@ -26,6 +26,11 @@ function collectState() {
     const rowsPerPage = parseInt(state.rowsPerPage);    // приведём количество страниц к числу
     const page = parseInt(state.page ?? 1);                // номер страницы по умолчанию 1 и тоже число
 
+    const totalFrom = state.totalFrom ? parseFloat(state.totalFrom) : undefined;
+    const totalTo = state.totalTo ? parseFloat(state.totalTo) : undefined;
+    // Массив только из определённых чисел, если оба пустые — undefined
+    const total = [totalFrom, totalTo].filter(v => v !== undefined && !isNaN(v));
+
     return {                                            // расширьте существующий return вот так
         ...state,
         rowsPerPage,
@@ -75,8 +80,8 @@ const applySorting = initSorting([        // Нам нужно передать 
     sampleTable.header.elements.sortByTotal
 ]);
 
-const applyFiltering = initFiltering(sampleTable.filter.elements, {    // передаём элементы фильтра
-    searchBySeller: indexes.sellers                                    // для элемента с именем searchBySeller устанавливаем массив продавцов
+const applyFiltering = initFiltering(sampleTable.filter.elements, {
+    seller: indexes.sellers   // было searchBySeller
 });
 
 const applySearching = initSearching('search');
