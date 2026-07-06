@@ -28,13 +28,13 @@ function collectState() {
 
     const totalFrom = state.totalFrom ? parseFloat(state.totalFrom) : undefined;
     const totalTo = state.totalTo ? parseFloat(state.totalTo) : undefined;
-    // Массив только из определённых чисел, если оба пустые — undefined
     const total = [totalFrom, totalTo].filter(v => v !== undefined && !isNaN(v));
 
     return {                                            // расширьте существующий return вот так
         ...state,
         rowsPerPage,
-        page
+        page,
+        total: total.length ? total : undefined
     };
 }
 
@@ -81,7 +81,7 @@ const applySorting = initSorting([        // Нам нужно передать 
 ]);
 
 const applyFiltering = initFiltering(sampleTable.filter.elements, {
-    seller: indexes.sellers   // было searchBySeller
+    searchBySeller: indexes.sellers   // ключ совпадает с data-name="searchBySeller"
 });
 
 const applySearching = initSearching('search');

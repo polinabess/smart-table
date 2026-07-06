@@ -1,12 +1,18 @@
 import { createComparison, defaultRules } from "../lib/compare.js";
 
-// Настраиваем компаратор (используем defaultRules)
 const compare = createComparison(defaultRules);
 
 export function initFiltering(elements, indexes) {
     // @todo: #4.1 — заполнить выпадающие списки опциями
     Object.keys(indexes).forEach((elementName) => {
         if (elements[elementName]) {
+            // Добавляем пустой option для сброса
+            const emptyOption = document.createElement("option");
+            emptyOption.value = "";
+            emptyOption.textContent = "";
+            elements[elementName].append(emptyOption);
+
+            // Остальные опции
             const options = Object.values(indexes[elementName]).map(name => {
                 const option = document.createElement("option");
                 option.value = name;
@@ -20,40 +26,35 @@ export function initFiltering(elements, indexes) {
     return (data, state, action) => {
         // @todo: #4.2 — обработать очистку поля (кнопка clear)
         if (action && action.name === 'clear') {
-            const fieldName = action.dataset.field;
+            const fieldName = action.dataset.field;   // имя поля в state
             if (fieldName) {
                 // Находим родительский контейнер и поле ввода
-                const parent = action.closest('.filter-group') || action.parentElement;
+                const parent = action.closest('.filter-wrapper') || action.parentElement;
                 const input = parent?.querySelector('input');
-                if (input) {
-                    input.value = '';
-                }
-                // Сбрасываем в state
-                if (state[fieldName] !== undefined) {
-                    state[fieldName] = '';
-                }
+                if (input) input.value = '';
+                if (state[fieldName] !== undefined) state[fieldName] = '';
             }
         }
 
         // Обработка кнопки сброса всех фильтров (reset)
         if (action && action.name === 'reset') {
-            // Список полей, которые нужно сбросить (все фильтры)
-            const filterFields = ['date', 'customer', 'seller', 'totalFrom', 'totalTo'];
-            filterFields.forEach(field => {
-                if (state[field] !== undefined) {
-                    state[field] = '';
-                }
-                // Сбрасываем DOM-элементы
-                const el = elements[field] || elements[`searchBy${field}`] ; // на случай других имён
-                if (el) {
-                    if (el.tagName === 'INPUT') {
-                        el.value = '';
-                    } else if (el.tagName === 'SELECT') {
-                        el.selectedIndex = 0;
+            // Сбрасываем все поля фильтрации в state и в DOM
+            Object.keys(elements).forEach(elementName => {
+                const el = elements[elementName];
+                const nameAttr = el.getAttribute('name');
+                if (nameAttr) {
+                    if (state[nameAttr] !== undefined) {
+                        state[nameAttr] = '';
                     }
                 }
+                // Сбрасываем значение элемента
+                if (el.tagName === 'INPUT') {
+                    el.value = '';
+                } else if (el.tagName === 'SELECT') {
+                    el.selectedIndex = 0;   // выбираем пустой option
+                }
             });
-            // Также удаляем поле total, чтобы не мешало
+            // Удаляем total, чтобы не мешал
             state.total = undefined;
         }
 
