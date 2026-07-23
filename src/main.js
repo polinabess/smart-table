@@ -15,7 +15,7 @@ import { initSearching } from './components/searching.js';
 
 
 // Исходные данные используемые в render()
-const {data, ...indexes} = initData(sourceData);
+const api = initData(sourceData);
 
 /**
  * Сбор и обработка полей из таблицы
@@ -42,17 +42,19 @@ function collectState() {
  * Перерисовка состояния таблицы при любых изменениях
  * @param {HTMLButtonElement?} action
  */
-function render(action) {
+async function render(action) {
     let state = collectState(); // состояние полей из таблицы
-    let result = [...data]; // копируем для последующего изменения
-    // @todo: использование
-    result = applySearching(result, state, action);
-    result = applyFiltering(result, state, action);
-    result = applySorting(result, state, action);
-    result = applyPagination(result, state, action);
+    let query = {}; // здесь будут формироваться параметры запроса
+    // другие apply*
+    query = applySearching(query, state, action); // result заменяем на query
+    query = applyFiltering(query, state, action); // result заменяем на query
+    query = applySorting(query, state, action); // result заменяем на query
+    query = applyPagination(query, state, action); // обновляем query
 
+    const { total, items } = await api.getRecords(query); // запрашиваем данные с собранными параметрами
 
-    sampleTable.render(result)
+    updatePagination(total, query); // перерисовываем пагинатор
+    sampleTable.render(items);
 }
 
 const sampleTable = initTable({
@@ -63,7 +65,7 @@ const sampleTable = initTable({
 }, render);
 
 // @todo: инициализация
-const applyPagination = initPagination(
+const {applyPagination, updatePagination} = initPagination(
     sampleTable.pagination.elements,             // передаём сюда элементы пагинации, найденные в шаблоне
     (el, page, isCurrent) => {                    // и колбэк, чтобы заполнять кнопки страниц данными
         const input = el.querySelector('input');
@@ -80,13 +82,19 @@ const applySorting = initSorting([        // Нам нужно передать 
     sampleTable.header.elements.sortByTotal
 ]);
 
-const applyFiltering = initFiltering(sampleTable.filter.elements, {
-    searchBySeller: indexes.sellers   // ключ совпадает с data-name="searchBySeller"
-});
+const {applyFiltering, updateIndexes} = initFiltering(sampleTable.filter.elements);
 
 const applySearching = initSearching('search');
 
 const appRoot = document.querySelector('#app');
 appRoot.appendChild(sampleTable.container);
 
-render();
+async function init() {
+    const indexes = await api.getIndexes();
+
+    updateIndexes(sampleTable.filter.elements, {
+        searchBySeller: indexes.sellers
+    });
+}
+
+init().then(render);

@@ -1,45 +1,18 @@
-import { createComparison, defaultRules } from "../lib/compare.js";
+export function initFiltering(elements) {
+    const updateIndexes = (elements, indexes) => {
+        Object.keys(indexes).forEach((elementName) => {
+            elements[elementName].append(...Object.values(indexes[elementName]).map(name => {
+                const el = document.createElement('option');
+                el.textContent = name;
+                el.value = name;
+                return el;
+            }))
+        })
+    }
 
-// Создаём компаратор один раз с правилами по умолчанию
-const compare = createComparison(defaultRules);
-
-export function initFiltering(elements, indexes) {
-    // @todo: #4.1 — заполнить выпадающие списки опциями
-    Object.keys(indexes).forEach((elementName) => {
-        const select = elements[elementName];
-        if (select && select.tagName === 'SELECT') {
-            // Добавляем опции из индекса
-            const options = Object.values(indexes[elementName]).map(name => {
-                const option = document.createElement("option");
-                option.value = name;
-                option.textContent = name;
-                return option;
-            });
-            select.append(...options);
-        }
-    });
-
-    return (data, state, action) => {
-        // @todo: #4.2 — обработать очистку поля (кнопка clear)
-        if (action && action.name === 'clear') {
-            const fieldName = action.dataset.field; // 'date' или 'customer'
-            if (fieldName) {
-                // Ищем родительский контейнер с классом filter-wrapper и поле ввода внутри
-                const wrapper = action.closest('.filter-wrapper');
-                if (wrapper) {
-                    const input = wrapper.querySelector('input');
-                    if (input) {
-                        input.value = ''; // сброс значения в DOM
-                    }
-                }
-                // Сбрасываем значение в состоянии
-                if (state[fieldName] !== undefined) {
-                    state[fieldName] = '';
-                }
-            }
-        }
-
-        // Обработка кнопки сброса всех фильтров (reset)
+    const applyFiltering = (query, state, action) => {
+        // код с обработкой очистки поля
+         // Обработка кнопки сброса всех фильтров (reset)
         if (action && action.name === 'reset') {
             // Перебираем все элементы фильтрации
             Object.keys(elements).forEach((key) => {
@@ -61,7 +34,21 @@ export function initFiltering(elements, indexes) {
             // total пересчитывается в collectState, поэтому дополнительных действий не требуется
         }
 
-        // @todo: #4.5 — отфильтровать данные используя компаратор
-        return data.filter(row => compare(row, state));
-    };
+        // @todo: #4.5 — отфильтровать данные, используя компаратор
+        const filter = {};
+        Object.keys(elements).forEach(key => {
+            if (elements[key]) {
+                if (['INPUT', 'SELECT'].includes(elements[key].tagName) && elements[key].value) { // ищем поля ввода в фильтре с непустыми данными
+                    filter[`filter[${elements[key].name}]`] = elements[key].value; // чтобы сформировать в query вложенный объект фильтра
+                }
+            }
+        })
+
+        return Object.keys(filter).length ? Object.assign({}, query, filter) : query; // если в фильтре что-то добавилось, применим к запросу
+    }
+
+    return {
+        updateIndexes,
+        applyFiltering
+    }
 }
